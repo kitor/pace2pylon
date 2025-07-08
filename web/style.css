@@ -1,0 +1,42 @@
+h2{
+    margin: 0.5em 0em;
+}
+h3{
+    margin-top: 0.25em;
+    margin-bottom: 0.5em;
+}
+#batteries,
+#inverter,
+#battery-stats{
+    overflow: hidden;
+}
+.stats-section{
+    float: left;
+    min-width: 10em;
+    margin-right: 1.5em;
+}
+.inverter-section{
+    float: left;
+    min-width: 5em;
+    margin-right: 1.5em;
+}
+.battery-container{
+    width: 9em;
+    float: left
+}
+.battery{
+    border: 1px solid #000;
+    width: 4em;
+    text-align: center;
+}
+
+.cell-balancing{
+  font-weight: bold
+}
+
+.cell-min{
+    background-color: #F00
+}
+.cell-max{
+    background-color: #0F0
+}
