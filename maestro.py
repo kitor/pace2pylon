@@ -170,7 +170,7 @@ class Maestro:
         # set Coil Max voltage and pack capacity to pack_rebalance_v, pack_rebalance_capacity
         CoilState.instance.writeFullCapacityAndVoltage(
                 capacity = Thresholds.pack_rebalance_capacity,
-                voltage = Thresholds.pack_rebalance_v
+                voltage = int(Thresholds.pack_rebalance_v / 10)  # from 3 to 2 decimals
                 )
 
         tprint(self.thread_id, "Rebalance enabled")
@@ -245,7 +245,7 @@ class Maestro:
         pass
 
     def paceRebootCbr2(self, battery_id, cid2, data, failed=False):
-        # Shutdown executed, try to read pack
+        # Shutdown executed
         tprint(self.thread_id, f"{battery_id}: WriteShutdownCommand completed")
 
     def postRebalance(self):
@@ -257,7 +257,7 @@ class Maestro:
             # Set Coil Max voltage and pack capacity to pack_charge_v, pack_capacity
             CoilState.instance.writeFullCapacityAndVoltage(
                     capacity = Thresholds.pack_capacity,
-                    voltage = Thresholds.pack_charge_v
+                    voltage = int(Thresholds.pack_charge_v / 10) # from 3 to 2 decimals
                     )
 
             # Set SystemStatus.rebalance_completed to False
@@ -284,7 +284,7 @@ class Maestro:
         # Set Coil Max voltage and pack capacity to regular mode
         CoilState.instance.writeFullCapacityAndVoltage(
                 capacity = Thresholds.pack_capacity,
-                voltage = Thresholds.pack_charge_v
+                voltage = int(Thresholds.pack_charge_v / 10) # from 3 to 2 decimals
                 )
 
         # Do not execute Coil "set to full" as we cancelled it mid-balance
