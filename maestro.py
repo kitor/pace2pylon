@@ -193,7 +193,8 @@ class Maestro:
         elif inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != 3:
             VevorInverter.instance.setChargingPriority(3)
 
-        # TODO: If any battery hit FULLY, temporary disallow discharge!
+        # TODO: If any battery hit FULLY, temporary disallow discharge?
+        
 
         # Voltage will sag down after batteries are fully charged, so we need to keep this in mind
         if (CoilData.values[Coil.PACK_VOLT.value] * 10) > Thresholds.pack_rebalance_v_threshold:
@@ -313,23 +314,32 @@ class Maestro:
             # other checks make no sense
             return
 
-        if SystemProtectionStatus.cell_ov or BmsProtectionStatus.bat_ov_prot:
+        # Hardware protection -> disable battery
+        if BmsProtectionStatus.bat_ov_prot:
+            SystemStatus.disable_charge = True
+            SystemStatus.disable_discharge = True
+            Translator.disableBattery()
+            tprint(self.thread_id, "Battery disable!")
+            return
+
+        # Software protection -> disable just charge
+        if SystemProtectionStatus.cell_ov:
             SystemStatus.disable_charge = True
             Translator.disableBatteryCharge()
             tprint(self.thread_id, "Battery disable charge!")
-        else:
-            SystemStatus.disable_charge = False
-            Translator.enableBatteryCharge()
-
-    def processAlarmsRebalance(self):
-        if not self.processAlarmsCommon():
-            # Common part decided to disable battery,
-            # other checks make no sense
             return
 
-        # Ignore Cell OV alarm/protect, this is a part of rebalancing.
-        # Cell OV fault will trigger BMS fault checked in common part.
-        return
+        # If we got here, we can re-enable charge
+        SystemStatus.disable_charge = False
+        Translator.enableBatteryCharge()
+
+    def processAlarmsRebalance(self):
+        # Post-rebalance: back to regular checks
+        if SystemStatus.rebalance_completed:
+            return self.processAlarmsRegular()
+
+        # Ignore Cell OV alarm/protect during rebalance this is a part of rebalancing.
+        return self.processAlarmsCommon()
 
     def processAlarmsCommon(self):
         '''
