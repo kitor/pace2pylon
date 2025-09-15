@@ -3,7 +3,7 @@ from dataclasses import dataclass
 @dataclass
 class Thresholds:
     # BMS defaults: alarm 3.60v, protect 3.70v, release 3.30V
-    cell_ov = 3500
+    cell_ov = 3630
     cell_ov_release = 3300
 
     # BMS defaults: alarm 2.80v, protect 2.50v, release 3.10V
