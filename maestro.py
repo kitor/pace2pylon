@@ -171,7 +171,7 @@ class Maestro:
         # set Coil Max voltage and pack capacity to pack_rebalance_v, pack_rebalance_capacity
         CoilState.instance.writeFullCapacityAndVoltage(
                 capacity = Thresholds.pack_rebalance_capacity,
-                voltage = int(Thresholds.pack_rebalance_v / 10)  # from 3 to 2 decimals
+                voltage = Thresholds.pack_rebalance_v
                 )
 
         tprint(self.thread_id, "Rebalance enabled")
@@ -275,7 +275,7 @@ class Maestro:
             # Set Coil Max voltage and pack capacity to pack_charge_v, pack_capacity
             CoilState.instance.writeFullCapacityAndVoltage(
                     capacity = Thresholds.pack_capacity,
-                    voltage = int(Thresholds.pack_charge_v / 10) # from 3 to 2 decimals
+                    voltage = Thresholds.pack_charge_v
                     )
 
             # Set SystemStatus.rebalance_completed to False
@@ -305,7 +305,7 @@ class Maestro:
         # Set Coil Max voltage and pack capacity to regular mode
         CoilState.instance.writeFullCapacityAndVoltage(
                 capacity = Thresholds.pack_capacity,
-                voltage = int(Thresholds.pack_charge_v / 10) # from 3 to 2 decimals
+                voltage = Thresholds.pack_charge_v
                 )
 
         # Do not execute Coil "set to full" as we cancelled it mid-balance
