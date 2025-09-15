@@ -446,14 +446,19 @@ class Maestro:
 
     def __verifyLimits(self):
         if not AD.data_ready or not CDD.data_ready:
+            # No data ready, enforce disable
             SystemStatus.battery_no_comm = True
             return
-            # No data, enforce disable
 
-        # Enforce limits, BMS doesn't seem to care on discharge...
+        # Enforce limits, inverter doesn't seem to care about our reported
+        # discharge limit.
         # AD is accurancy 3, CCD 1 thus divide.
         # Allows for temporary overshot by 1.2. as we limit BMS values to 0.8
         # This gives our limit 0.96 of BMS
+        # TODO: Shall I disable battery instead? I can't think about anything
+        # that would allow such a condition to exists. Also, check Vevor
+        # badly documented SET_BATTERY_DISCHARGE_PROT_AMPS which is disabled
+        # by default... and if working should handle that inverter-side
         if (AD.total_current/100) * 1.2 > min([CDD.max_charge, -CDD.max_discharge]):
             tprint(self.thread_id, "current over limit!")
             tprint(self.thread_id, str(AD.total_current *1.2))
@@ -478,7 +483,7 @@ class Maestro:
         if AD.cell_v_min < Thresholds.cell_uv:
             SystemProtectionStatus.cell_uv = True
 
-        # Clear flags if set and params got under control
+        # Clear protection flags if params returned to safe values
         if SystemProtectionStatus.cell_ot and AD.cell_temp_max < Thresholds.cell_ot_release:
             SystemProtectionStatus.cell_ot = False
 
