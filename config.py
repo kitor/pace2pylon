@@ -22,9 +22,9 @@ class Thresholds:
     mos_ot = 3330
     mos_ot_release = 3280
 
-    # In regular mode charge to 27,1V (roughly 90%)
+    # In regular mode charge to 27,13V (roughly 90%)
     # For rebalance charge until 27,95V (=BMS Full)
-    pack_charge_v = 27100
+    pack_charge_v = 27400
     pack_rebalance_v = 27950
     pack_rebalance_v_threshold = 27800
     pack_rebalance_current_threshold = 500

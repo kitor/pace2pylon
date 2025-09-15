@@ -58,6 +58,7 @@ class SystemStatus:
     rebalance_active = False
     rebalance_completed = False
     rebalance_cancel = False
+    rebalance_threshold_hit = False
 
     @classmethod
     def as_dict(cls):
@@ -180,6 +181,11 @@ class Maestro:
         Step 2 of Rebalance procedure
         '''
         # If in night tarriff (13-15, 22-6 local time) swtch charging to PV & Grid, else PV only
+        # TODO: Don't change setting if all:
+        #    - Coil voltage read > Thresholds.pack_rebalance_v_threshold
+        #    - Coil current read < Thresholds.pack_rebalance_current_threshold
+        #    - but batteries are still balancing
+        # ... as this requires no input power
         hour = datetime.now().hour
         if (0 <= hour <= 6) or (13 <= hour <= 15) or (22 <= hour <= 24):
             if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] == 3:
@@ -187,14 +193,21 @@ class Maestro:
         elif inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != 3:
             VevorInverter.instance.setChargingPriority(3)
 
+        # TODO: If any battery hit FULLY, temporary disallow discharge!
+
+        # Voltage will sag down after batteries are fully charged, so we need to keep this in mind
+        if (CoilData.values[Coil.PACK_VOLT.value] * 10) > Thresholds.pack_rebalance_v_threshold:
+            SystemStatus.rebalance_threshold_hit = True
+
         # If all conditions are met, set SystemStatus.rebalance_completed
-        #    - Coil voltage read < Thresholds.pack_rebalance_v_threshold
+        #    - Coil voltage read exceeded Thresholds.pack_rebalance_v_threshold
         #    - Coil current read < Thresholds.pack_rebalance_current_threshold
         #    - None of batteries report balancing anymore
-        if (CoilData.values[Coil.PACK_VOLT.value] * 10) > Thresholds.pack_rebalance_v_threshold \
+        if SystemStatus.rebalance_threshold_hit  \
                  and CoilData.values[Coil.PACK_AMPS.value] < Thresholds.pack_rebalance_current_threshold \
                  and SystemProtectionStatus.cell_balancing == False:
             SystemStatus.rebalance_completed = True
+            SystemStatus.rebalance_threshold_hit = False
             tprint(self.thread_id, "Rebalance completed")
 
     def disableRebalance(self):
@@ -274,12 +287,15 @@ class Maestro:
         SystemStatus.rebalance_needed = False
         SystemStatus.rebalance_active = False
         SystemStatus.rebalance_completed = False
+        SystemStatus.rebalance_threshold_hit = False
 
         # Set battery charge voltage (Translator) to Thresholds.pack_charge_v
         Translator.upper_limit = Thresholds.pack_charge_v
 
         if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != 3:
             VevorInverter.instance.setChargingPriority(3)
+
+        # TODO: Find packs to reboot and execute if needed
 
         # Set Coil Max voltage and pack capacity to regular mode
         CoilState.instance.writeFullCapacityAndVoltage(
