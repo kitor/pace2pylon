@@ -229,6 +229,11 @@ class Maestro:
             pace_instances[pack_id].tryPostMsg(pace_api.WriteDischargeMosfetSwitchCommand, [], self.paceRebootCbr1)
             sleep(3)
 
+        # TODO: Sometimes this doesn't help. See why.
+        # Seems that if reboot didn't happen and still OV prot + Fully is active
+        # It is possible to unlock battery by temporary charging OV prot release
+        # value to above current cells voltage.
+
         # Set Coil to full, still at "rebalance" capacity but regular voltage
         CoilState.instance.setFull()
 
