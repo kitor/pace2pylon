@@ -491,5 +491,5 @@ class Maestro:
         if SystemProtectionStatus.cell_ov and AD.cell_v_max < Thresholds.cell_ov_release:
             SystemProtectionStatus.cell_ov = False
 
-        if SystemProtectionStatus.cell_uv and AD.cell_v_min < Thresholds.cell_uv_release:
+        if SystemProtectionStatus.cell_uv and AD.cell_v_min > Thresholds.cell_uv_release:
             SystemProtectionStatus.cell_uv = False
