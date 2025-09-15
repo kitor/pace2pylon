@@ -377,7 +377,7 @@ var inverterUI = {
         charge_pow = inverter[Vevor.INV_CHARGING_POWER]
         charge_amps = inverter[Vevor.INV_CHARGING_AMPS] / 10
         pv_amps = inverter[Vevor.PV_CHARGING_AMPS]/10
-        buf = `Mode: ${ mode } <a href="/toggle/setChargingPriority/2">Set PV + Grid</a> <a href="/toggle/setChargingPriority/3">Set PV only</a><br />
+        buf = `Mode: ${ mode } <a href="/toggle/SetChargingPriority/2">Set PV + Grid</a> <a href="/toggle/SetChargingPriority/3">Set PV only</a><br />
                Limits: &darr;${ soc_low }% &uarr;${ soc_high }% &cross;${ soc_cutoff }%<br />
                &#128268; ${ charge_pow }W; &#x2600; ${ pv_amps.toFixed(1) }A; ~ ${ charge_amps.toFixed(1) }A<br />`
         this.charging.innerHTML = buf

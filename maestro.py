@@ -238,8 +238,7 @@ class Maestro:
         CoilState.instance.setFull()
 
         # Switch Inverter charging back to PV only
-        if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != 3:
-            VevorInverter.instance.setChargingPriority(3)
+        VevorInverter.instance.setChargingPriority(3)
 
         # Switch Inverter mode to SBU
         VevorInverter.instance.setOutputMode(2)
