@@ -122,14 +122,19 @@ class VevorInverter:
     def setOutputMode(self, mode):
         if mode not in [0,1,2]: # Program 01, 0 USB, 1 SUB, 2 SBU
             return
-        tprint(self.thread_id, f"vevor setOutputMode {mode}")
-        self.__writeReg(Vevor.SET_OUTPUT_PRIO.value, mode)
+        # Prevent unnecessary writes
+        if inverterData[Vevor.SET_OUTPUT_PRIO.value] != mode:
+            tprint(self.thread_id, f"vevor setOutputMode {mode}")
+            self.__writeReg(Vevor.SET_OUTPUT_PRIO.value, mode)
 
     def setChargingPriority(self, mode):
         if mode not in [1,2,3]: #1 PV prio, 2 PV and Util, 3 PV only
             return
-        tprint(self.thread_id, f"vevor toggleChargingPriority {mode}")
-        self.__writeReg(Vevor.SET_BATTERY_CHARGE_PRIO.value, mode)
+
+        # Prevent unnecessary writes
+        if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != mode:
+            tprint(self.thread_id, f"vevor toggleChargingPriority {mode}")
+            self.__writeReg(Vevor.SET_BATTERY_CHARGE_PRIO.value, mode)
 
     def __readRegs(self, base, amount):
         self.semaphore.acquire()
@@ -200,11 +205,13 @@ class VevorMock:
     def setOutputMode(self, mode):
         if mode not in [0,1,2]: # Program 01, 0 USB, 1 SUB, 2 SBU
             return
-        tprint(self.thread_id, f"vevor setOutputMode {mode}")
-        inverterData[Vevor.SET_OUTPUT_PRIO.value] = mode
+        if inverterData[Vevor.SET_OUTPUT_PRIO.value] != mode:
+            tprint(self.thread_id, f"vevor setOutputMode {mode}")
+            inverterData[Vevor.SET_OUTPUT_PRIO.value] = mode
 
     def setChargingPriority(self, mode):
         if mode not in [1,2,3]: #1 PV prio, 2 PV and Util, 3 PV only
             return
-        tprint(self.thread_id, f"vevor toggleChargingPriority {mode}")
-        inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] = mode
+        if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != mode:
+            tprint(self.thread_id, f"vevor toggleChargingPriority {mode}")
+            inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] = mode
