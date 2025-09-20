@@ -13,7 +13,9 @@ def do_redirect(url):
     return f'<html><head><meta http-equiv="refresh" content="0; url={url}"></head></html>'
 
 def do_api(path):
-    if path.endswith("/static/"):
+    args = path.split("/")
+    arg = args[2]
+    if arg == "static":
         # Dump static data, required only once per reload.
         # No need to serialize static stuff on every call.
         obj = {
@@ -58,9 +60,6 @@ def do_toggle(path):
     elif arg == "CancelRebalance":
         SystemStatus.rebalance_cancel = True
         tprint(WebUI.thread_id, 'toggleCancelRebalance')
-    elif arg == "FullCharge":
-        Translator.toggleBatteryFullCharge()
-        tprint(WebUI.thread_id, 'toggleFullCharge')
     elif arg == "BatteryDisable":
         SystemStatus.force_disable = not SystemStatus.force_disable
         tprint(WebUI.thread_id, 'toggleBatteryDisable')
