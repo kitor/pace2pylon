@@ -14,7 +14,6 @@ class PaceMaster:
     def __init__(self, thread_id, addr, port):
         self.thread_id = thread_id
         self.conn_data = (addr, port)
-        self.reqObj = mapping.values()
         self.queue = queue.Queue(maxsize=32)
 
     def thread(self):
@@ -49,16 +48,14 @@ class PaceMaster:
                     # that's fine
                     pass
 
-    def __execute(self, s, cmd, args):
-        return self.singleCommand(s, cmd)
 
-
-    def tryPostMsg(self, cmd, params, cbr):
+    def tryPostMsg(self, cmd, cbr, params = {}):
         try:
             self.queue.put((cmd, params, cbr), timeout=1)
         except queue.Full:
             # bounce to CBR with failed flag
             cbr(self.thread_id, None, None, failed=True)
+
 
     def flushIncomingData(self):
         # In case we reset comm or received response that failed to decode
@@ -75,18 +72,22 @@ class PaceMaster:
         tprint(self.thread_id, "flush done")
 
 
-    def singleCommand(self, s, reqObj):
-        InfoObj = reqObj()
+    def __execute(self, s, cmd, args):
+        InfoObj = cmd(**args)
         req = Protocol.create(b"\x30\x30", InfoObj, FrameType.REQUEST)
         req.printInfo(" <-- ", self.thread_id)
         s.send(req.encode())
 
         msg = b'' # empty buffer
         try:
+            loops = 0
             while True:
+                if loops > 20:
+                    raise TimeoutError
                 msg += s.recv(4096)
                 if msg[-1:] == b'\r':
                     break
+                loops += 1
         except socket.timeout:
             tprint(self.thread_id, "socket timeout, skipping command")
             raise

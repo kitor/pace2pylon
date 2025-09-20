@@ -226,7 +226,7 @@ class Maestro:
         # Reboot each battery one by one, wait for each to come back
         # This will start a chain of reboots, one by one
         for pack_id in self.getPacksToReboot():
-            pace_instances[pack_id].tryPostMsg(pace_api.WriteDischargeMosfetSwitchCommand, [], self.paceRebootCbr1)
+            pace_instances[pack_id].tryPostMsg(pace_api.WriteDischargeMosfetSwitchCommand, self.paceRebootCbr1)
             sleep(3)
 
         # TODO: Sometimes this doesn't help. See why.
@@ -258,7 +258,7 @@ class Maestro:
 
     def paceRebootCbr1(self, battery_id, cid2, data, failed=False):
         # Mosfet disabled, shutdown pack
-        pace_instances[battery_id].tryPostMsg(pace_api.WriteShutdownCommand, [], self.paceRebootCbr2)
+        pace_instances[battery_id].tryPostMsg(pace_api.WriteShutdownCommand, self.paceRebootCbr2)
         tprint(self.thread_id, f"{battery_id}: WriteDischargeMosfetSwitchCommand completed")
         pass
 

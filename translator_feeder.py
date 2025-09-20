@@ -40,12 +40,12 @@ class TranslatorFeeder:
                     # In case of read failures this will execute only once per full loop
                     if tick == 0 and self.extra_waiting[battery_id] < 1:
                         for cmd in self.extra_commands:
-                            if pace_instances[battery_id].tryPostMsg(cmd, [], self.dataReadyExtraCbr):
+                            if pace_instances[battery_id].tryPostMsg(cmd, self.dataReadyExtraCbr):
                                 self.extra_waiting[battery_id] += 1
 
                     if self.regular_waiting[battery_id] < 1:
                         for cmd in self.regular_commands:
-                            if pace_instances[battery_id].tryPostMsg(cmd, [], self.dataReadyRegularCbr):
+                            if pace_instances[battery_id].tryPostMsg(cmd, self.dataReadyRegularCbr):
                                 self.regular_waiting[battery_id] += 1
                 sleep(1)
 
