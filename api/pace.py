@@ -100,7 +100,7 @@ class WriteCellOverVoltageConfiguration(ApiFrame):
         INFO  = toByte("01")
         INFO += toUShort("3600")
         INFO += toUShort("3700")
-        INFO += toUShort("3400")
+        INFO += toUShort("3350")
         INFO += toByte("10")
         self.data = {
             "alarm_mv": fromUShort(INFO[2:6]),
@@ -147,13 +147,39 @@ class ReadCellOverVoltageConfiguration(ApiFrame):
         return True
 
     def renderRequest(self):
-        return "ReadCellOverVoltageConfiguration()"
+        return "ReadCellOverVoltageConfiguration()\n"
 
     def renderResponse(self):
         if not self.data:
             return f"    Data not decoded yet"
         return f"Alarm {self.data["alarm_mv"]}, prot {self.data["prot_mv"]}\n" \
                f"Release mv {self.data["prot_release_mv"]}, Release ms {self.data["prot_delay_ms"] * 100}"
+
+
+class WriteChargeMosfetSwitchCommand(ApiFrame):
+    def __init__(self):
+        self.CID2_cmd  = b'\x39\x41'  # 9Ah
+        self.CID2_resp = b"\x30\x30"  # 00h -> no error
+
+        self.data = None
+
+    def request(self):
+        inf  = toUShort("00")
+        return inf
+
+    def decodeResponse(self, INFO):
+        print(INFO)
+        self.data = True
+        return True
+
+    def renderRequest(self):
+        return "WriteChargeMosfetSwitchCommand()"
+
+    def renderResponse(self):
+        if not self.data:
+            return f"    Data not decoded yet"
+        return f"    Response received"
+
 
 class WriteDischargeMosfetSwitchCommand(ApiFrame):
     def __init__(self):
@@ -216,7 +242,7 @@ class WriteCellBalancingConfiguration(ApiFrame):
 
     def request(self):
         inf  = toUShort("3300")
-        inf += toUShort("20")
+        inf += toUShort("30")
         self.data = {
             "threshold_mv": fromUShort(inf[0:4]),
             "delta_mv": fromUShort(inf[4:8]),
@@ -227,7 +253,7 @@ class WriteCellBalancingConfiguration(ApiFrame):
         return True
 
     def renderRequest(self):
-        return f"getPackOverVoltageConfiguration()\n" \
+        return f"WriteCellBalancingConfiguration()\n" \
                f"Threshold {self.data["threshold_mv"]}, delta {self.data["delta_mv"]}"
 
     def renderResponse(self):
