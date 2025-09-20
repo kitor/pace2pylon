@@ -82,7 +82,6 @@ Rebalance states:
  - set battery charge voltage (Translator) to Thresholds.pack_rebalance_v
  - set Coil Max voltage and pack capacity to pack_rebalance_v, pack_rebalance_capacity
 
-
 2. During rebalance:
  - If in night tarriff (13-15, 22-6 local time) switch charging to PV & Grid, else PV only
  - If all conditions are met, set SystemStatus.rebalance_completed
@@ -94,8 +93,7 @@ Rebalance states:
  - Set SystemStatus.rebalance_needed = False
  - Set SystemStatus.rebalance_active = False
  - Set battery charge voltage (Translator) to Thresholds.pack_charge_v
- - Reboot each battery one by one, wait for each to come back
-   - They need WriteDischargeMosfetSwitchCommand() before WriteShutdownCommand()
+ - Unlock any BMS-locked batteries
  - Reset Coil to fully charged
  - Switch Inverter charging to PV only (if needed)
  - Switch Inverter mode to SBU
@@ -117,6 +115,7 @@ class Maestro:
     def __init__(self, thread_id):
         self.thread_id = thread_id
         self.reboot_done = False
+
 
     def task(self):
         tprint(self.thread_id, "Maestro task start")
@@ -155,6 +154,7 @@ class Maestro:
                 # Never stop the loop!
                 tprint(self.thread_id, "Exception: " + str(e))
 
+
     def requestRebalance(self):
         '''
         Step 1 of Rebalance procedure
@@ -176,6 +176,7 @@ class Maestro:
 
         tprint(self.thread_id, "Rebalance enabled")
 
+
     def processRebalance(self):
         '''
         Step 2 of Rebalance procedure
@@ -187,14 +188,14 @@ class Maestro:
         #    - but batteries are still balancing
         # ... as this requires no input power
         hour = datetime.now().hour
-        if (0 <= hour <= 6) or (13 <= hour <= 15) or (22 <= hour <= 24):
-            if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] == 3:
-                VevorInverter.instance.setChargingPriority(2)
-        elif inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != 3:
+        if (0 <= hour < 6) or (13 <= hour < 15) or (22 <= hour < 24):
+            VevorInverter.instance.setChargingPriority(2)
+        else:
             VevorInverter.instance.setChargingPriority(3)
 
-        # TODO: If any battery hit FULLY, temporary disallow discharge?
-        
+        # TODO: If any battery hit FULLY, maybe temporary disallow discharge?
+        # I think having "in case of power loss during rebalance" procedure that
+        # will immediately run cancelRebalance() might be better.
 
         # Voltage will sag down after batteries are fully charged, so we need to keep this in mind
         if (CoilData.values[Coil.PACK_VOLT.value] * 10) > Thresholds.pack_rebalance_v_threshold:
@@ -211,6 +212,7 @@ class Maestro:
             SystemStatus.rebalance_threshold_hit = False
             tprint(self.thread_id, "Rebalance completed")
 
+
     def disableRebalance(self):
         '''
         Step 3 of Rebalance procedure
@@ -223,16 +225,8 @@ class Maestro:
         # Set battery charge voltage (Translator) to Thresholds.pack_charge_v
         Translator.upper_limit = Thresholds.pack_charge_v
 
-        # Reboot each battery one by one, wait for each to come back
-        # This will start a chain of reboots, one by one
-        for pack_id in self.getPacksToReboot():
-            pace_instances[pack_id].tryPostMsg(pace_api.WriteDischargeMosfetSwitchCommand, self.paceRebootCbr1)
-            sleep(3)
-
-        # TODO: Sometimes this doesn't help. See why.
-        # Seems that if reboot didn't happen and still OV prot + Fully is active
-        # It is possible to unlock battery by temporary charging OV prot release
-        # value to above current cells voltage.
+        # Re-enable charge mosfets on batteries with Protections enabled
+        self.unlockPackProtections()
 
         # Set Coil to full, still at "rebalance" capacity but regular voltage
         CoilState.instance.setFull()
@@ -245,49 +239,36 @@ class Maestro:
 
         tprint(self.thread_id, "Rebalance disabled")
 
-    def getPacksToReboot(self):
-        packs = []
-        for i in range(len(Translator.batteries)):
-            # packs.append(i)
-            if any([
-                Translator.batteries[i][0x44]["protect_state_1"] & 0x05, # Overvolt
-                Translator.batteries[i][0x44]["protect_state_2"] & 0x80  # Fully charged
-            ]):
-                packs.append(i)
-        return packs
-
-    def paceRebootCbr1(self, battery_id, cid2, data, failed=False):
-        # Mosfet disabled, shutdown pack
-        pace_instances[battery_id].tryPostMsg(pace_api.WriteShutdownCommand, self.paceRebootCbr2)
-        tprint(self.thread_id, f"{battery_id}: WriteDischargeMosfetSwitchCommand completed")
-        pass
-
-    def paceRebootCbr2(self, battery_id, cid2, data, failed=False):
-        # Shutdown executed
-        tprint(self.thread_id, f"{battery_id}: WriteShutdownCommand completed")
 
     def postRebalance(self):
         '''
         Step 4 of Rebalance procedure
         '''
-        # Wait for Coil reported pack capacity to fall under Thresholds.pack_capacity and:
-        if CoilData.values[Coil.CAPACITY.value] <= Thresholds.pack_capacity:
-            # Set Coil Max voltage and pack capacity to pack_charge_v, pack_capacity
-            CoilState.instance.writeFullCapacityAndVoltage(
-                    capacity = Thresholds.pack_capacity,
-                    voltage = Thresholds.pack_charge_v
-                    )
+        # Wait for Coil reported pack capacity to fall under Thresholds.pack_capacity
+        if CoilData.values[Coil.CAPACITY.value] > Thresholds.pack_capacity:
+            return
 
-            # Set SystemStatus.rebalance_completed to False
-            SystemStatus.rebalance_needed = False
-            SystemStatus.rebalance_active = False
-            SystemStatus.rebalance_completed = False
-            tprint(self.thread_id, "Post-Rebalance job done")
+        # Set Coil Max voltage and pack capacity to pack_charge_v, pack_capacity
+        CoilState.instance.writeFullCapacityAndVoltage(
+                capacity = Thresholds.pack_capacity,
+                voltage = Thresholds.pack_charge_v
+                )
+
+        # Set SystemStatus.rebalance_completed to False
+        SystemStatus.rebalance_needed = False
+        SystemStatus.rebalance_active = False
+        SystemStatus.rebalance_completed = False
+        tprint(self.thread_id, "Post-Rebalance job done")
+
 
     def cancelRebalance(self):
         '''
-        Allow for external cancel
+        Allow to cancel rebalance at any moment.
+        This will leave SoC uncalibrated!
         '''
+        # TODO: This possibly could be merged with disableRebalance() and
+        # postRebalance(). It does the same thing minus waiting for thresholds
+        # and resetting SoC meter.
         SystemStatus.rebalance_cancel = False
         SystemStatus.rebalance_needed = False
         SystemStatus.rebalance_active = False
@@ -297,10 +278,13 @@ class Maestro:
         # Set battery charge voltage (Translator) to Thresholds.pack_charge_v
         Translator.upper_limit = Thresholds.pack_charge_v
 
-        if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != 3:
-            VevorInverter.instance.setChargingPriority(3)
+        # Re-enable charge mosfets on batteries with Protections enabled
+        self.unlockPackProtections()
 
-        # TODO: Find packs to reboot and execute if needed
+        # Do not execute Coil "set to full" as we cancelled it mid-balance
+
+        # Switch Inverter charging back to PV only
+        VevorInverter.instance.setChargingPriority(3)
 
         # Set Coil Max voltage and pack capacity to regular mode
         CoilState.instance.writeFullCapacityAndVoltage(
@@ -308,50 +292,99 @@ class Maestro:
                 voltage = Thresholds.pack_charge_v
                 )
 
-        # Do not execute Coil "set to full" as we cancelled it mid-balance
+        tprint(self.thread_id, "Rebalance cancelled")
 
-        tprint(self.thread_id, "Rebalance cancelled by user")
+
+    def unlockPackProtections(self):
+        '''
+        Re-enable battery packs that have Overvolt or Fully charged flags set
+        '''
+        for i in range(len(Translator.batteries)):
+            # packs.append(i)
+            if any([
+                Translator.batteries[i][0x44]["protect_state_1"] & 0x05, # Overvolt
+                Translator.batteries[i][0x44]["protect_state_2"] & 0x80  # Fully charged
+            ]):
+                pace_instances[pack_id].tryPostMsg(
+                    pace_api.WriteChargeMosfetSwitchCommand, self.paceRebootCbr)
+
+
+    def paceRebootCbr(self, battery_id, cid2, data, failed=False):
+        '''
+        Callback for pack reboot
+        '''
+        tprint(self.thread_id, f"{battery_id}: WriteChargeMosfetSwitchCommand completed")
+        pass
+
 
     def processAlarmsRegular(self):
-        if not self.processAlarmsCommon():
-            # Common part decided to disable battery,
-            # other checks make no sense
-            return
+        '''
+        Alarms processing, regular procedure
+        '''
+        # Gather data from common processing
+        disable_discharge, disable_charge, rebalance_needed = self.processAlarmsCommon()
 
-        # Hardware protection -> disable battery
+        # In regular case BMS overvoltage protection should never happen.
+        # If it does, BMS locks both charge and discharge (meh...)
+        # so we need to protect entire system by disabling the whole pack
         if BmsProtectionStatus.bat_ov_prot:
-            SystemStatus.disable_charge = True
-            SystemStatus.disable_discharge = True
-            Translator.disableBattery()
-            tprint(self.thread_id, "Battery disable!")
-            return
+            disable_charge = True
+            disable_discharge = True
 
-        # Software protection -> disable just charge
+        # We also have a defense for BMS ov prot via software Cell OV prot.
+        # In case soft cell OV limit is exceeded, just disable the charging.
         if SystemProtectionStatus.cell_ov:
-            SystemStatus.disable_charge = True
-            Translator.disableBatteryCharge()
-            tprint(self.thread_id, "Battery disable charge!")
-            return
+            disable_charge = True
 
-        # If we got here, we can re-enable charge
-        SystemStatus.disable_charge = False
-        Translator.enableBatteryCharge()
+        self.commitAlarms(disable_discharge, disable_charge, rebalance_needed)
+
 
     def processAlarmsRebalance(self):
-        # Post-rebalance: back to regular checks
+        '''
+        Alarms processing, during rebalance procedure
+        '''
+        # Post-rebalance stage uses "full" (regular) checks
         if SystemStatus.rebalance_completed:
-            return self.processAlarmsRegular()
+            self.processAlarmsRegular()
+            return
 
-        # Ignore Cell OV alarm/protect during rebalance this is a part of rebalancing.
-        return self.processAlarmsCommon()
+        # During rebalance stage we ignore BMS and Maestro OV protection
+        # as hitting BMS OT prot activates BMS cell balancing.
+        disable_discharge, disable_charge, rebalance_needed = self.processAlarmsCommon()
+        self.commitAlarms(disable_discharge, disable_charge, rebalance_needed)
+
+
+    def commitAlarms(self, disable_discharge, disable_charge, rebalance_needed):
+        '''
+        Converts gathered alarms into actions
+        '''
+        Translator.setBatteryChargeDischarge(
+            enable_charge = not disable_charge,
+            enable_discharge = not disable_discharge
+        )
+        if SystemStatus.disable_charge != disable_charge:
+            tprint(self.thread_id, "Battery charge " + ("disabled" if disable_charge else "enabled"))
+        if SystemStatus.disable_discharge != disable_discharge:
+            tprint(self.thread_id, "Battery discharge " + ("disabled" if disable_discharge else "enabled"))
+
+        SystemStatus.disable_charge = disable_charge
+        SystemStatus.disable_discharge = disable_discharge
+
+        if rebalance_needed:
+            SystemStatus.rebalance_needed = True
+            tprint(self.thread_id, "Rebalance needed!")
+
 
     def processAlarmsCommon(self):
         '''
         Common part of alarms processing, everything except potential
         Cell OV which can be part of Rebalance process
-
-        Return False on fatal conditions that disables battery.
         '''
+        disable_discharge = False
+        disable_charge = False
+        rebalance_needed = False
+
+        # Any failure conditions that should disable battery immediately
         if any([
                 SystemStatus.force_disable,
                 SystemStatus.battery_no_comm,
@@ -363,26 +396,23 @@ class Maestro:
                 SystemProtectionStatus.bms_ot,
                 SystemProtectionStatus.mos_ot
                 ]):
-            tprint(self.thread_id, "Battery disable!")
-            SystemStatus.disable_discharge = True
-            SystemStatus.disable_charge = True
-            Translator.disableBattery()
-            return False
+            disable_discharge = True
+            disable_charge = True
 
+        # In normal conditions we wouldn't hit software undervolt protection.
+        # If that happens, Coil redout is out of sync and we let batteries
+        # to discharge too much. Thus disable charge and trigger rebalance.
         if SystemProtectionStatus.cell_uv:
-            tprint(self.thread_id, "Battery disable discharge!")
-            SystemStatus.disable_discharge = True
-            Translator.disableBatteryDischarge()
+            disable_discharge = True
+            rebalance_needed = True
 
-            # Trigger unscheduled rebalance
-            SystemStatus.rebalance_needed = True
-        else:
-            SystemStatus.disable_discharge = False
-            Translator.enableBatteryDischarge()
+        return (disable_discharge, disable_charge, rebalance_needed)
 
-        return True
 
     def verifyComm(self):
+        '''
+        Check for BMS and Coil communcation failures
+        '''
         if all(Translator.stats["battery_comm"]):
             SystemStatus.battery_no_comm = False
         else:
@@ -427,7 +457,7 @@ class Maestro:
 
     def verifyBmsCellBalancing(self):
         '''
-        Check for active cell balancing
+        Check BMSes for active cell balancing
         '''
         for battery in Translator.batteries:
             # No data from battery, assume battery fault
@@ -462,6 +492,7 @@ class Maestro:
         # Clear fault flags
         BmsProtectionStatus.fault = False
 
+
     def verifyLimits(self):
         # check analog data
         AD.lock()
@@ -474,14 +505,14 @@ class Maestro:
         AD.unlock()
         CDD.unlock()
 
+
     def __verifyLimits(self):
         if not AD.data_ready or not CDD.data_ready:
             # No data ready, enforce disable
             SystemStatus.battery_no_comm = True
             return
 
-        # Enforce limits, inverter doesn't seem to care about our reported
-        # discharge limit.
+        # Enforce dicharge limits, inverter doesn't seem to care about it.
         # AD is accurancy 3, CCD 1 thus divide.
         # Allows for temporary overshot by 1.2. as we limit BMS values to 0.8
         # This gives our limit 0.96 of BMS

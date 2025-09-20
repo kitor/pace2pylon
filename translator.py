@@ -141,29 +141,40 @@ class Translator:
             pass
         cls.semaphore.release()
 
-    @classmethod
-    def disableBattery(cls):
-        cls.state_flags = 0x0
 
     @classmethod
-    def toggleBatteryFullCharge(cls):
-        cls.state_flags = cls.state_flags ^ PylonChargeFlags.FULL_CHARGE
+    def setBatteryChargeDischarge(cls, enable_charge, enable_discharge):
+        '''
+        Just a convinience function to write less code in Maestro
+        '''
+        if enable_charge:
+            cls.enableBatteryCharge()
+        else:
+            cls.disableBatteryCharge()
 
-    @classmethod
-    def disableBatteryFullCharge(cls):
-        cls.state_flags = cls.state_flags & ~PylonChargeFlags.FULL_CHARGE
+        if enable_discharge:
+            cls.enableBatteryDischarge()
+        else:
+            cls.disableBatteryDischarge()
+
 
     @classmethod
     def enableBatteryDischarge(cls):
         cls.state_flags = cls.state_flags | PylonChargeFlags.DISCHARGE_ENABLE
 
+
     @classmethod
     def enableBatteryCharge(cls):
         cls.state_flags = cls.state_flags | PylonChargeFlags.CHARGE_ENABLE
 
+
+    @classmethod
+    def disableBatteryDischarge(cls):
+        cls.state_flags = cls.state_flags & ~PylonChargeFlags.DISCHARGE_ENABLE
+
+
     @classmethod
     def disableBatteryCharge(cls):
-        cls.disableBatteryFullCharge()
         cls.state_flags = cls.state_flags & ~PylonChargeFlags.CHARGE_ENABLE
 
 
