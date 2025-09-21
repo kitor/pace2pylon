@@ -30,13 +30,14 @@ def tprint(thread_id, buf):
 #    thread_id -= 12
     lines = buf.splitlines()
     for line in lines:
-        logs[thread_id].append(line)
+        ts  = datetime.now().strftime("%m-%d %H:%M:%S%z")
+        logs[thread_id].append(f"{ts} {line}")
 
     base = _THREADS_BASE + _THREAD_LINES * thread_id
     off = 0
-    ts  = datetime.now().strftime("%m-%d %H:%M:%S%z")
+
     for line in logs[thread_id][-_THREAD_LINES+2:]:
-        printxy(f"{ts} {line}", 0, base+off)
+        printxy(line, 0, base+off)
         off+=1
 
 
