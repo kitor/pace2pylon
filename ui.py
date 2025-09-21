@@ -17,7 +17,7 @@ def printxy(text, x=0, y=0):
     sys.stdout.flush()
 
 
-def ts_print(buf):
+def ts_print(line):
     ts  = datetime.now().strftime("%m-%d %H:%M:%S%z")
     print(f"{ts} {line}")
 
