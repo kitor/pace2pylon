@@ -125,7 +125,8 @@ class CoilState:
         for i in range(0,12):
             CoilData.values.append(0)
 
-    def runComm(self):
+    def task(self):
+        tprint(self.thread_id, "Coil: task start")
         while True:
             try:
                 self.client.connect()
@@ -211,8 +212,8 @@ class CoilMock:
         for i in range(0,12):
             CoilData.values.append(0)
 
-    def runComm(self):
-        tprint(self.thread_id, "mock Coil: hello")
+    def task(self):
+        tprint(self.thread_id, "mock Coil: task start")
 
         while True:
             self.updateFakeData()

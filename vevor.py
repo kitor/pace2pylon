@@ -98,7 +98,8 @@ class VevorInverter:
         for i in range(0,800):
             inverterData.append(0)
 
-    def runComm(self):
+    def task(self):
+        tprint(self.thread_id, "Vevor: task start")
         while True:
             try:
                 self.client.connect()
@@ -106,7 +107,7 @@ class VevorInverter:
                     self.gatherData()
                 self.client.close()
             except Exception as e:
-                tprint(self.thread_id, "vevor modbus error")
+                tprint(self.thread_id, "Vevor: modbus exception: " + str(e))
                 tprint(self.thread_id, str(e))
 
     def gatherData(self):
@@ -116,7 +117,6 @@ class VevorInverter:
         resp = self.__readRegs(420, 1)
         resp = self.__readRegs(760, 20)
 
-        tprint(self.thread_id, "vevor read done")
         sleep(1)
 
     def setOutputMode(self, mode):
@@ -124,7 +124,7 @@ class VevorInverter:
             return
         # Prevent unnecessary writes
         if inverterData[Vevor.SET_OUTPUT_PRIO.value] != mode:
-            tprint(self.thread_id, f"vevor setOutputMode {mode}")
+            tprint(self.thread_id, f"Vevor: setOutputMode {mode}")
             self.__writeReg(Vevor.SET_OUTPUT_PRIO.value, mode)
 
     def setChargingPriority(self, mode):
@@ -133,7 +133,7 @@ class VevorInverter:
 
         # Prevent unnecessary writes
         if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != mode:
-            tprint(self.thread_id, f"vevor toggleChargingPriority {mode}")
+            tprint(self.thread_id, f"Vevor: toggleChargingPriority {mode}")
             self.__writeReg(Vevor.SET_BATTERY_CHARGE_PRIO.value, mode)
 
     def __readRegs(self, base, amount):
@@ -173,8 +173,8 @@ class VevorMock:
         for i in range(0,800):
             inverterData.append(0)
 
-    def runComm(self):
-        tprint(self.thread_id, "hello mock")
+    def task(self):
+        tprint(self.thread_id, "mock Vevor: task start")
         self.setFakeData()
 
         while True:
@@ -206,12 +206,12 @@ class VevorMock:
         if mode not in [0,1,2]: # Program 01, 0 USB, 1 SUB, 2 SBU
             return
         if inverterData[Vevor.SET_OUTPUT_PRIO.value] != mode:
-            tprint(self.thread_id, f"vevor setOutputMode {mode}")
+            tprint(self.thread_id, f"mock Vevor: setOutputMode {mode}")
             inverterData[Vevor.SET_OUTPUT_PRIO.value] = mode
 
     def setChargingPriority(self, mode):
         if mode not in [1,2,3]: #1 PV prio, 2 PV and Util, 3 PV only
             return
         if inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] != mode:
-            tprint(self.thread_id, f"vevor toggleChargingPriority {mode}")
+            tprint(self.thread_id, f"mock Vevor: toggleChargingPriority {mode}")
             inverterData[Vevor.SET_BATTERY_CHARGE_PRIO.value] = mode

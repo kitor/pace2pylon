@@ -56,20 +56,20 @@ threads.append(t)
 
 # VevorInverter.instance = VevorInverter(len(threads), IP, port_vevor, vevor_slave_id)
 VevorInverter.instance = VevorMock(len(threads), IP, port_vevor, vevor_slave_id)
-t = threading.Thread(target=VevorInverter.instance.runComm)
+t = threading.Thread(target=VevorInverter.instance.task)
 threads.append(t)
 
 maestro = Maestro(len(threads))
 t = threading.Thread(target=maestro.task)
 threads.append(t)
 
-webui = WebUI(len(threads))
-t = threading.Thread(target=webui.task)
-threads.append(t)
-
 # CoilState.instance = CoilState(len(threads), IP, port_coil, coil_slave_id)
 CoilState.instance = CoilMock(len(threads), IP, port_coil, coil_slave_id)
-t = threading.Thread(target=CoilState.instance.runComm)
+t = threading.Thread(target=CoilState.instance.task)
+threads.append(t)
+
+webui = WebUI(len(threads))
+t = threading.Thread(target=webui.task)
 threads.append(t)
 
 TranslatorFeeder.instance = TranslatorFeeder(len(threads))
