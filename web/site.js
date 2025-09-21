@@ -80,7 +80,8 @@ var maestroUI = {
                OC: ${ drawProt(systemProtectionStatus.bat_oc) }, &#127777; BMS: ${ drawProt(systemProtectionStatus.bms_ot) },
                &#127777; MOS: ${ drawProt(systemProtectionStatus.mos_ot) }, &#127777; CELL: ${ drawProt(systemProtectionStatus.cell_ot) }. <br />
                Rebalance needed: <a href="/toggle/RebalanceNeeded">${ systemStatus.rebalance_needed }</a>,
-               active: ${ systemStatus.rebalance_active }, completed: ${ systemStatus.rebalance_completed };
+               active: ${ systemStatus.rebalance_active }, threshold:  <a href="/toggle/RebalanceThreshold">${ systemStatus.rebalance_threshold_hit }</a>,
+               completed: ${ systemStatus.rebalance_completed };
                <a href="/toggle/CancelRebalance">Cancel rebalance</a>`
         this.monitor.innerHTML = buf
     }

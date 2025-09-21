@@ -60,12 +60,12 @@ maestro = Maestro(len(threads))
 t = threading.Thread(target=maestro.task)
 threads.append(t)
 
-webui = WebUI(len(threads))
-t = threading.Thread(target=webui.task)
-threads.append(t)
-
 CoilState.instance = CoilState(len(threads), IP, port_coil, coil_slave_id)
 t = threading.Thread(target=CoilState.instance.runComm)
+threads.append(t)
+
+webui = WebUI(len(threads))
+t = threading.Thread(target=webui.task)
 threads.append(t)
 
 TranslatorFeeder.instance = TranslatorFeeder(len(threads))

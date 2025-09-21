@@ -134,13 +134,11 @@ class CoilState:
                     self.gatherData()
                 self.client.close()
             except Exception as e:
-                tprint(self.thread_id, "coil modbus error")
-                tprint(self.thread_id, str(e))
+                tprint(self.thread_id, "Coil: modbus exception: " + str(e))
                 CoilData.comm = False
 
 
     def gatherData(self):
-        tprint(self.thread_id, "coil read")
         self.semaphore.acquire()
         try:
             resp = self.client.read_input_registers(
@@ -150,7 +148,7 @@ class CoilState:
         self.semaphore.release()
 
         if not resp:
-            tprint(self.thread_id, "coil read fail")
+            tprint(self.thread_id, "Coil: read failure")
             CoilData.comm = False
             return
 
@@ -165,7 +163,6 @@ class CoilState:
         CoilData.values[11] = resp.registers[11]
         CoilData.comm = True
 
-        tprint(self.thread_id, "coil read done")
         sleep(1)
 
     def setFull(self):
@@ -176,7 +173,7 @@ class CoilState:
         except:
             pass
         self.semaphore.release()
-        tprint(self.thread_id, "coil set full")
+        tprint(self.thread_id, "Coil: set full")
 
     def setEmpty(self):
         self.semaphore.acquire()
@@ -186,21 +183,20 @@ class CoilState:
         except:
             pass
         self.semaphore.release()
-        tprint(self.thread_id, "coil set empty")
+        tprint(self.thread_id, "Coil: set empty")
 
     def writeFullCapacityAndVoltage(self, capacity, voltage):
         r1 = capacity >> 16
         r2 = capacity & 0xFFFF
         self.semaphore.acquire()
         try:
-            writeHoldingReg(client, 1, r1)
-            writeHoldingReg(client, 2, r2)
-            writeHoldingReg(client, 3, voltage)
+            self.client.write_registers(1, [r1, r2, voltage], slave=self.slave)
         except:
+            tprint(self.thread_id, f"Coil: set capacity exception: " + str(e))
             pass
         self.semaphore.release()
 
-        tprint(self.thread_id, "coil set capacity")
+        tprint(self.thread_id, f"Coil: set capacity {capacity}mAh, {voltage}mV")
 
 
 class CoilMock:
@@ -216,7 +212,7 @@ class CoilMock:
             CoilData.values.append(0)
 
     def runComm(self):
-        tprint(self.thread_id, "hello mock")
+        tprint(self.thread_id, "mock Coil: hello")
 
         while True:
             self.updateFakeData()
@@ -244,13 +240,13 @@ class CoilMock:
     def setFull(self):
         from config import Thresholds
         self.capacity = self.currentCapacity
-        tprint(self.thread_id, "mock coil set full")
+        tprint(self.thread_id, "mock Coil: set full")
 
     def setEmpty(self):
         self.capacity = 0
-        tprint(self.thread_id, "mock coil set empty")
+        tprint(self.thread_id, "mock Coil: set empty")
 
     def writeFullCapacityAndVoltage(self, capacity, voltage):
         self.capacity = capacity
         self.currentCapacity = capacity
-        tprint(self.thread_id, f"mock coil set capacity {capacity} {voltage}")
+        tprint(self.thread_id, f"mock Coil set capacity {capacity}mAh, {voltage}mV")

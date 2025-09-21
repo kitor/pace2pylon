@@ -57,6 +57,9 @@ def do_toggle(path):
     if arg == "RebalanceNeeded":
         SystemStatus.rebalance_needed = not SystemStatus.rebalance_needed
         tprint(WebUI.thread_id, 'toggleRebalanceNeeded')
+    if arg == "RebalanceThreshold":
+        SystemStatus.rebalance_threshold_hit = not SystemStatus.rebalance_threshold_hit
+        tprint(WebUI.thread_id, 'toggleRebalanceNeeded')
     elif arg == "CancelRebalance":
         SystemStatus.rebalance_cancel = True
         tprint(WebUI.thread_id, 'toggleCancelRebalance')

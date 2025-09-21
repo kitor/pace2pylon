@@ -118,7 +118,7 @@ class Maestro:
 
 
     def task(self):
-        tprint(self.thread_id, "Maestro task start")
+        tprint(self.thread_id, "Maestro: task start")
         while True:
             try:
                 sleep(1)
@@ -152,7 +152,7 @@ class Maestro:
 
             except Exception as e:
                 # Never stop the loop!
-                tprint(self.thread_id, "Exception: " + str(e))
+                tprint(self.thread_id, "Maestro: Task exception: " + str(e))
 
 
     def requestRebalance(self):
@@ -174,7 +174,7 @@ class Maestro:
                 voltage = Thresholds.pack_rebalance_v
                 )
 
-        tprint(self.thread_id, "Rebalance enabled")
+        tprint(self.thread_id, "Maestro: Rebalance enabled")
 
 
     def processRebalance(self):
@@ -210,7 +210,7 @@ class Maestro:
                  and SystemProtectionStatus.cell_balancing == False:
             SystemStatus.rebalance_completed = True
             SystemStatus.rebalance_threshold_hit = False
-            tprint(self.thread_id, "Rebalance completed")
+            tprint(self.thread_id, "Maestro: Rebalance completed")
 
 
     def disableRebalance(self):
@@ -237,7 +237,7 @@ class Maestro:
         # Switch Inverter mode to SBU
         VevorInverter.instance.setOutputMode(2)
 
-        tprint(self.thread_id, "Rebalance disabled")
+        tprint(self.thread_id, "Maestro: Rebalance finished")
 
 
     def postRebalance(self):
@@ -258,7 +258,7 @@ class Maestro:
         SystemStatus.rebalance_needed = False
         SystemStatus.rebalance_active = False
         SystemStatus.rebalance_completed = False
-        tprint(self.thread_id, "Post-Rebalance job done")
+        tprint(self.thread_id, "Maestro: Post-Rebalance job done")
 
 
     def cancelRebalance(self):
@@ -292,7 +292,7 @@ class Maestro:
                 voltage = Thresholds.pack_charge_v
                 )
 
-        tprint(self.thread_id, "Rebalance cancelled")
+        tprint(self.thread_id, "Maestro: Rebalance cancelled")
 
 
     def unlockPackProtections(self):
@@ -313,7 +313,7 @@ class Maestro:
         '''
         Callback for pack reboot
         '''
-        tprint(self.thread_id, f"{battery_id}: WriteChargeMosfetSwitchCommand completed")
+        tprint(self.thread_id, f"Maestro: {battery_id}: WriteChargeMosfetSwitchCommand completed")
         pass
 
 
@@ -363,16 +363,16 @@ class Maestro:
             enable_discharge = not disable_discharge
         )
         if SystemStatus.disable_charge != disable_charge:
-            tprint(self.thread_id, "Battery charge " + ("disabled" if disable_charge else "enabled"))
+            tprint(self.thread_id, "Maestro: Battery charge " + ("disabled" if disable_charge else "enabled"))
         if SystemStatus.disable_discharge != disable_discharge:
-            tprint(self.thread_id, "Battery discharge " + ("disabled" if disable_discharge else "enabled"))
+            tprint(self.thread_id, "Maestro: Battery discharge " + ("disabled" if disable_discharge else "enabled"))
 
         SystemStatus.disable_charge = disable_charge
         SystemStatus.disable_discharge = disable_discharge
 
         if rebalance_needed:
             SystemStatus.rebalance_needed = True
-            tprint(self.thread_id, "Rebalance needed!")
+            tprint(self.thread_id, "Maestro: Rebalance needed!")
 
 
     def processAlarmsCommon(self):
@@ -500,7 +500,7 @@ class Maestro:
         try:
             self.__verifyLimits()
         except Exception as e:
-            tprint(self.thread_id, f"Exception {str(e)}")
+            tprint(self.thread_id, f"Maestro: verifyLimits Exception {str(e)}")
             SystemStatus.battery_no_comm = True
         AD.unlock()
         CDD.unlock()
@@ -521,9 +521,7 @@ class Maestro:
         # badly documented SET_BATTERY_DISCHARGE_PROT_AMPS which is disabled
         # by default... and if working should handle that inverter-side
         if (AD.total_current/100) * 1.2 > min([CDD.max_charge, -CDD.max_discharge]):
-            tprint(self.thread_id, "current over limit!")
-            tprint(self.thread_id, str(AD.total_current *1.2))
-            tprint(self.thread_id, str(min([CDD.max_charge, -CDD.max_discharge])))
+            tprint(self.thread_id, "Maestro: Overcurrent detected!")
             SystemProtectionStatus.bat_oc = True
         else:
             SystemProtectionStatus.bat_oc = False
