@@ -197,7 +197,7 @@ class CoilState:
             pass
         self.semaphore.release()
 
-        tprint(self.thread_id, f"Coil: set capacity {capacity}mAh, {voltage}mV")
+        tprint(self.thread_id, f"Coil: set capacity {capacity/1000}Ah, {voltage/10}V")
 
 
 class CoilMock:
@@ -250,4 +250,4 @@ class CoilMock:
     def writeFullCapacityAndVoltage(self, capacity, voltage):
         self.capacity = capacity
         self.currentCapacity = capacity
-        tprint(self.thread_id, f"mock Coil set capacity {capacity}mAh, {voltage}mV")
+        tprint(self.thread_id, f"mock Coil set capacity {capacity/1000}Ah, {voltage/10}V")

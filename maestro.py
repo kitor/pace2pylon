@@ -171,7 +171,7 @@ class Maestro:
         # set Coil Max voltage and pack capacity to pack_rebalance_v, pack_rebalance_capacity
         CoilState.instance.writeFullCapacityAndVoltage(
                 capacity = Thresholds.pack_rebalance_capacity,
-                voltage = Thresholds.pack_rebalance_v
+                voltage = int(Thresholds.pack_rebalance_v / 10)
                 )
 
         tprint(self.thread_id, "Maestro: Rebalance enabled")
@@ -228,7 +228,7 @@ class Maestro:
         # Re-enable charge mosfets on batteries with Protections enabled
         self.unlockPackProtections()
 
-        # Set Coil to full, still at "rebalance" capacity but regular voltage
+        # Set Coil to full, (still at "rebalance" settings)
         CoilState.instance.setFull()
 
         # Switch Inverter charging back to PV only
@@ -248,10 +248,10 @@ class Maestro:
         if CoilData.values[Coil.CAPACITY.value] > Thresholds.pack_capacity:
             return
 
-        # Set Coil Max voltage and pack capacity to pack_charge_v, pack_capacity
+        # Set Coil Max voltage and pack capacity to regular thresholds
         CoilState.instance.writeFullCapacityAndVoltage(
                 capacity = Thresholds.pack_capacity,
-                voltage = Thresholds.pack_charge_v
+                voltage = int(Thresholds.pack_charge_v / 10)
                 )
 
         # Set SystemStatus.rebalance_completed to False
@@ -289,7 +289,7 @@ class Maestro:
         # Set Coil Max voltage and pack capacity to regular mode
         CoilState.instance.writeFullCapacityAndVoltage(
                 capacity = Thresholds.pack_capacity,
-                voltage = Thresholds.pack_charge_v
+                voltage = int(Thresholds.pack_charge_v / 10)
                 )
 
         tprint(self.thread_id, "Maestro: Rebalance cancelled")
