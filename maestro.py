@@ -305,7 +305,7 @@ class Maestro:
                 Translator.batteries[i][0x44]["protect_state_1"] & 0x05, # Overvolt
                 Translator.batteries[i][0x44]["protect_state_2"] & 0x80  # Fully charged
             ]):
-                pace_instances[pack_id].tryPostMsg(
+                pace_instances[i].tryPostMsg(
                     pace_api.WriteChargeMosfetSwitchCommand, self.paceRebootCbr)
 
 
