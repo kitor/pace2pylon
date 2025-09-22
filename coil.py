@@ -10,6 +10,7 @@ import json, struct
 
 from threading import Semaphore
 
+
 # Holding registers
 class CoilSettings(Enum):
     ADDRESS        = 0
@@ -27,6 +28,7 @@ class CoilSettings(Enum):
     def as_dict(cls):
         return {i.name: i.value for i in cls}
 
+
 class Coil(Enum):
     # CoilFields, sainitized from split fields
     PERCENT     = 0
@@ -41,6 +43,7 @@ class Coil(Enum):
     @classmethod
     def as_dict(cls):
         return {i.name: i.value for i in cls}
+
 
 # Input registers
 class CoilFields(Enum):
@@ -57,6 +60,7 @@ class CoilFields(Enum):
     FLAGS           = 10
     STATE           = 11 # -> CoilChargeState
 
+
 class CoilChargeState(Enum):
     STATE_IDLE      = 0
     STATE_DISCHARGE = 1
@@ -65,6 +69,7 @@ class CoilChargeState(Enum):
     @classmethod
     def as_dict(cls):
         return {i.name: i.value for i in cls}
+
 
 class SetChargeLevelResponse(ModbusPDU):
     function_code = 0x6F
@@ -80,6 +85,7 @@ class SetChargeLevelResponse(ModbusPDU):
     def decode(self, data):
         a, val = struct.unpack('>HH', data)
         self.values = [val]
+
 
 class SetChargeLevelRequest(ModbusPDU):
     function_code = 0x6F
@@ -100,9 +106,11 @@ class SetChargeLevelRequest(ModbusPDU):
         _ = context
         return SetChargeLevelResponse()
 
+
 class CoilData:
     values = []
     comm = False
+
 
 class CoilState:
     instance = None
@@ -125,6 +133,7 @@ class CoilState:
         for i in range(0,12):
             CoilData.values.append(0)
 
+
     def task(self):
         tprint(self.thread_id, "Coil: task start")
         while True:
@@ -132,6 +141,7 @@ class CoilState:
                 self.client.connect()
                 self.client.register(SetChargeLevelResponse)
                 while True:
+                    sleep(1)
                     self.gatherData()
                 self.client.close()
             except Exception as e:
@@ -141,15 +151,16 @@ class CoilState:
 
     def gatherData(self):
         self.semaphore.acquire()
+        read_ok = True
         try:
             resp = self.client.read_input_registers(
                     0, count=12, slave = self.slave)
         except:
-            pass
+            read_ok = False
         self.semaphore.release()
 
-        if not resp:
-            tprint(self.thread_id, "Coil: read failure")
+        if not resp or read_ok:
+            tprint(self.thread_id, f"Coil: read failure ({read_ok})")
             CoilData.comm = False
             return
 
@@ -164,7 +175,6 @@ class CoilState:
         CoilData.values[11] = resp.registers[11]
         CoilData.comm = True
 
-        sleep(1)
 
     def setFull(self):
         self.semaphore.acquire()
@@ -172,9 +182,11 @@ class CoilState:
             req = SetChargeLevelRequest(1, 0xF)
             resp = self.client.execute(False, req)
         except:
-            pass
+            tprint(self.thread_id, f"Coil: setFull exception: " + str(e))
         self.semaphore.release()
+
         tprint(self.thread_id, "Coil: set full")
+
 
     def setEmpty(self):
         self.semaphore.acquire()
@@ -182,22 +194,24 @@ class CoilState:
             req = SetChargeLevelRequest(1, 0x0)
             resp = self.client.execute(False, req)
         except:
-            pass
+            tprint(self.thread_id, f"Coil: setEmpty exception: " + str(e))
         self.semaphore.release()
+
         tprint(self.thread_id, "Coil: set empty")
+
 
     def writeFullCapacityAndVoltage(self, capacity, voltage):
         r1 = capacity >> 16
         r2 = capacity & 0xFFFF
+
         self.semaphore.acquire()
         try:
             self.client.write_registers(1, [r1, r2, voltage], slave=self.slave)
         except:
-            tprint(self.thread_id, f"Coil: set capacity exception: " + str(e))
-            pass
+            tprint(self.thread_id, f"Coil: writeFullCapacityAndVoltage exception: " + str(e))
         self.semaphore.release()
 
-        tprint(self.thread_id, f"Coil: set capacity {capacity/1000}Ah, {voltage/10}V")
+        tprint(self.thread_id, f"Coil: set capacity {capacity/1000}Ah, {voltage/100}V")
 
 
 class CoilMock:
@@ -212,12 +226,14 @@ class CoilMock:
         for i in range(0,12):
             CoilData.values.append(0)
 
+
     def task(self):
         tprint(self.thread_id, "mock Coil: task start")
 
         while True:
             self.updateFakeData()
             sleep(1) # fake thread
+
 
     def updateFakeData(self):
         from api.pylon_data import AnalogData as AD, ChargeDischargeData as CDD
@@ -238,14 +254,17 @@ class CoilMock:
 
         CoilData.comm = True
 
+
     def setFull(self):
         from config import Thresholds
         self.capacity = self.currentCapacity
         tprint(self.thread_id, "mock Coil: set full")
 
+
     def setEmpty(self):
         self.capacity = 0
         tprint(self.thread_id, "mock Coil: set empty")
+
 
     def writeFullCapacityAndVoltage(self, capacity, voltage):
         self.capacity = capacity
