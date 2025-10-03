@@ -26,11 +26,12 @@ def ts_print(line):
 
 
 def tprint(thread_id, buf):
-#    if thread_id < 12:
-#        return
-#    ts_print(buf)
-#    return
-#    thread_id -= 12
+    if thread_id < (len(logs) - 1):
+	# skip webui log spam, it runs on last thread
+        ts_print(buf)
+
+    return
+
     print_semaphore.acquire()
     try:
         lines = buf.splitlines()
