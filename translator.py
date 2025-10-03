@@ -63,16 +63,14 @@ class Translator:
             cls.stats[name] = [ None ] * cls.count
 
     @classmethod
-    def updateThread(cls):
+    def task(cls):
+        tprint(cls.thread_id, "Translator: task start")
         while True:
             sleep(1)
             cls.updateStats()
 
     @classmethod
     def updateStats(cls):
-        tprint(cls.thread_id, "== translator start ==")
-
-
         ts = time()
 
         cls.semaphore.acquire()
@@ -116,11 +114,11 @@ class Translator:
             # How did we get here? Pass just not to deadlock.
             # If we end here, likely some stats will be missing
             # and updatePylonData() will gracefully fail so it is fine.
+            tprint(cls.thread_id, "Translator: updateStats exception: " + str(e))
             pass
 
         cls.updatePylonData()
         cls.semaphore.release()
-        tprint(cls.thread_id, "== translator done ==")
 
     @classmethod
     def setBatteryData(cls, id, command, data):
@@ -206,7 +204,7 @@ class Translator:
             AD.data_ready = True
         except Exception as e:
             # This can happen if complete stats are not yet initialized
-            tprint(cls.thread_id, str(e))
+            tprint(cls.thread_id, "Translator: updatePylonData AD exception: " + str(e))
             pass
         AD.unlock()
 
@@ -221,7 +219,7 @@ class Translator:
             #CDD.state_flags   = PylonChargeFlags.CHARGE_ENABLE | PylonChargeFlags.FULL_CHARGE
             CDD.data_ready    = True
         except Exception as e:
-            tprint(cls.thread_id, str(e))
+            tprint(cls.thread_id, "Translator: updatePylonData CCD exception: " + str(e))
             # This can happen if complete stats are not yet initialized
             pass
         CDD.unlock()

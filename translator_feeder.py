@@ -32,8 +32,9 @@ class TranslatorFeeder:
                 pace_api.ReadDischargeSlowOverCurrentConfiguration
             ]
 
-    def run(self):
+    def task(self):
         sleep(5)
+        tprint(self.thread_id, "TranslatorFeeder: task start")
         while True:
             for tick in range(10):
                 for battery_id in range(self.count):
@@ -51,14 +52,14 @@ class TranslatorFeeder:
 
     def dataReadyExtraCbr(self, battery_id, cid2, data, failed=False):
         self.extra_waiting[battery_id] -= 1
-        if not failed:
+        if failed:
+            tprint(self.thread_id, f"TranslatorFeeder: dataReadyExtraCbr {battery_id} {cid2} failed.")
+        else:
             Translator.setBatteryData(battery_id, cid2, data)
-
-        tprint(self.thread_id, f"dataReadyExtraCbr: {battery_id}, {failed}")
 
     def dataReadyRegularCbr(self, battery_id, cid2, data, failed=False):
         self.regular_waiting[battery_id] -= 1
-        if not failed:
+        if failed:
+            tprint(self.thread_id, f"TranslatorFeeder: dataReadyRegularCbr {battery_id} {cid2} failed.")
+        else:
             Translator.setBatteryData(battery_id, cid2, data)
-
-        tprint(self.thread_id, f"dataReadyRegularCbr: {battery_id}, {failed}")

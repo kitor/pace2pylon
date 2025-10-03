@@ -49,7 +49,11 @@ t = threading.Thread(target=slave.runComm)
 threads.append(t)
 
 Translator.thread_id = len(threads)
-t = threading.Thread(target=Translator.updateThread)
+t = threading.Thread(target=Translator.task)
+threads.append(t)
+
+TranslatorFeeder.instance = TranslatorFeeder(len(threads))
+t = threading.Thread(target=TranslatorFeeder.instance.task)
 threads.append(t)
 
 VevorInverter.instance = VevorInverter(len(threads), IP, port_vevor, vevor_slave_id)
@@ -66,10 +70,6 @@ threads.append(t)
 
 webui = WebUI(len(threads))
 t = threading.Thread(target=webui.task)
-threads.append(t)
-
-TranslatorFeeder.instance = TranslatorFeeder(len(threads))
-t = threading.Thread(target=TranslatorFeeder.instance.run)
 threads.append(t)
 
 for i in range(0,len(threads)):
