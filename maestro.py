@@ -370,7 +370,7 @@ class Maestro:
         SystemStatus.disable_charge = disable_charge
         SystemStatus.disable_discharge = disable_discharge
 
-        if rebalance_needed:
+        if rebalance_needed and not SystemStatus.rebalance_needed:
             SystemStatus.rebalance_needed = True
             tprint(self.thread_id, "Maestro: Rebalance needed!")
 
