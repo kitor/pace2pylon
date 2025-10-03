@@ -24,7 +24,7 @@ class Thresholds:
 
     # In regular mode charge to roughly 90%
     # For rebalance charge until 27,95V (=BMS Full)
-    pack_charge_v = 27200
+    pack_charge_v = 27350
     pack_rebalance_v = 27950
     pack_rebalance_v_threshold = 27800
     pack_rebalance_current_threshold = 500
