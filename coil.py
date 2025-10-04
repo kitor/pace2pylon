@@ -159,7 +159,7 @@ class CoilState:
             read_ok = False
         self.semaphore.release()
 
-        if not resp or read_ok:
+        if not resp or not read_ok:
             tprint(self.thread_id, f"Coil: read failure ({read_ok})")
             CoilData.comm = False
             return
