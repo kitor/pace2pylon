@@ -336,6 +336,11 @@ class Maestro:
         if SystemProtectionStatus.cell_ov:
             disable_charge = True
 
+        # During post-rebalance job disable charge to let the cells settle.
+        # Otherwise they may get up to OV prot immediately.
+        if SystemProtectionStatus.rebalance_completed:
+            disable_charge = True
+
         self.commitAlarms(disable_discharge, disable_charge, rebalance_needed)
 
 
