@@ -71,8 +71,11 @@ def do_toggle(path):
             Translator.setBatteryUpperLimit(int(args[3]))
         except:
             pass
-    elif arg == "SetChargingPriority":
+    elif arg == "ForceChargingPriority":
+        SystemStatus.force_charging_priority = True
         VevorInverter.instance.setChargingPriority(int(args[3]))
+    elif arg == "ResetChargingPriority":
+        SystemStatus.force_charging_priority = False
     return do_redirect("/")
 
 class Server(BaseHTTPRequestHandler):

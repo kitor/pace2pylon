@@ -293,6 +293,7 @@ var inverterUI = {
     battery: false,
     solar: false,
     charging: false,
+    charging_header: false,
     init: function(){
         this.header = $("#inverter-header")
         this.summary = $("#inverter-summary")
@@ -302,6 +303,7 @@ var inverterUI = {
         this.battery_header = $("#inverter-battery-header")
         this.solar = $("#inverter-solar .data")
         this.charging = $("#inverter-charging .data")
+        this.charging_header = $("#inverter-charging-header")
         console.log("Inverter UI init")
     },
     update: function(){
@@ -378,7 +380,10 @@ var inverterUI = {
         charge_pow = inverter[Vevor.INV_CHARGING_POWER]
         charge_amps = inverter[Vevor.INV_CHARGING_AMPS] / 10
         pv_amps = inverter[Vevor.PV_CHARGING_AMPS]/10
-        buf = `Mode: ${ mode } <a href="/toggle/SetChargingPriority/2">Set PV + Grid</a> <a href="/toggle/SetChargingPriority/3">Set PV only</a><br />
+        is_auto = systemStatus.force_charging_priority ? "Forced" : "Auto"
+
+        this.charging_header.innerHTML = `Charging: ${mode} (${is_auto})`
+        buf = `<a href="/toggle/ForceChargingPriority/2"><br />PV + Grid</a> <a href="/toggle/ForceChargingPriority/3">PV only</a> <a href="/toggle/ResetChargingPriority/">Reset</a><br />
                Limits: &darr;${ soc_low }% &uarr;${ soc_high }% &cross;${ soc_cutoff }%<br />
                &#128268; ${ charge_pow }W; &#x2600; ${ pv_amps.toFixed(1) }A; ~ ${ charge_amps.toFixed(1) }A<br />`
         this.charging.innerHTML = buf

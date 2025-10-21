@@ -53,6 +53,7 @@ class SystemStatus:
     disable_charge = True
     disable_discharge = True
     force_disable = False
+    force_charging_priority = False
 
     rebalance_needed = False
     rebalance_active = False
@@ -187,11 +188,12 @@ class Maestro:
         #    - Coil current read < Thresholds.pack_rebalance_current_threshold
         #    - but batteries are still balancing
         # ... as this requires no input power
-        hour = datetime.now().hour
-        if (0 <= hour < 6) or (13 <= hour < 15) or (22 <= hour < 24):
-            VevorInverter.instance.setChargingPriority(2)
-        else:
-            VevorInverter.instance.setChargingPriority(3)
+        if not SystemStatus.force_charging_priority:
+            hour = datetime.now().hour
+            if (0 <= hour < 6) or (13 <= hour < 15) or (22 <= hour < 24):
+                VevorInverter.instance.setChargingPriority(2)
+            else:
+                VevorInverter.instance.setChargingPriority(3)
 
         # TODO: If any battery hit FULLY, maybe temporary disallow discharge?
         # I think having "in case of power loss during rebalance" procedure that
@@ -232,7 +234,8 @@ class Maestro:
         CoilState.instance.setFull()
 
         # Switch Inverter charging back to PV only
-        VevorInverter.instance.setChargingPriority(3)
+        if not SystemStatus.force_charging_priority:
+            VevorInverter.instance.setChargingPriority(3)
 
         # Switch Inverter mode to SBU
         VevorInverter.instance.setOutputMode(2)
@@ -284,7 +287,8 @@ class Maestro:
         # Do not execute Coil "set to full" as we cancelled it mid-balance
 
         # Switch Inverter charging back to PV only
-        VevorInverter.instance.setChargingPriority(3)
+        if not SystemStatus.force_charging_priority:
+            VevorInverter.instance.setChargingPriority(3)
 
         # Set Coil Max voltage and pack capacity to regular mode
         CoilState.instance.writeFullCapacityAndVoltage(
