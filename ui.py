@@ -26,8 +26,8 @@ def ts_print(line):
 
 
 def tprint(thread_id, buf):
-    if thread_id < (len(logs) - 2):
-	# skip webui log spam, it runs on last thread
+    if (thread_id > 12) and (thread_id < (len(logs) - 2)):
+	# skip webui and batteries logs
         ts_print(buf)
 
     return
