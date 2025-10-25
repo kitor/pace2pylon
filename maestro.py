@@ -230,6 +230,14 @@ class Maestro:
         # Re-enable charge mosfets on batteries with Protections enabled
         self.unlockPackProtections()
 
+        # Update pack capacity to pack_rebalance_capacity - 1,
+        # as without it seems setFull() sometimes have no effect
+        # (capacity stays at full while discharging)
+        CoilState.instance.writeFullCapacityAndVoltage(
+                capacity = Thresholds.pack_rebalance_capacity - 1,
+                voltage = int(Thresholds.pack_rebalance_v / 10)
+                )
+
         # Set Coil to full, (still at "rebalance" settings)
         CoilState.instance.setFull()
 
@@ -251,6 +259,7 @@ class Maestro:
         if CoilData.values[Coil.CAPACITY.value] > Thresholds.pack_capacity:
             return
 
+        tprint(self.thread_id, f"Maestro: Current coil capacity {CoilData.values[Coil.CAPACITY.value]}, Pack full capacity {Thresholds.pack_capacity}")
         # Set Coil Max voltage and pack capacity to regular thresholds
         CoilState.instance.writeFullCapacityAndVoltage(
                 capacity = Thresholds.pack_capacity,
