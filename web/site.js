@@ -383,7 +383,7 @@ var inverterUI = {
         is_auto = systemStatus.force_charging_priority ? "Forced" : "Auto"
 
         this.charging_header.innerHTML = `Charging: ${mode} (${is_auto})`
-        buf = `<a href="/toggle/ForceChargingPriority/2"><br />PV + Grid</a> <a href="/toggle/ForceChargingPriority/3">PV only</a> <a href="/toggle/ResetChargingPriority/">Reset</a><br />
+        buf = `Set <a href="/toggle/ForceChargingPriority/2">PV + Grid</a> | <a href="/toggle/ForceChargingPriority/3">PV only</a> | <a href="/toggle/ResetChargingPriority/">Auto</a><br />
                Limits: &darr;${ soc_low }% &uarr;${ soc_high }% &cross;${ soc_cutoff }%<br />
                &#128268; ${ charge_pow }W; &#x2600; ${ pv_amps.toFixed(1) }A; ~ ${ charge_amps.toFixed(1) }A<br />`
         this.charging.innerHTML = buf
