@@ -3,7 +3,7 @@
 from pace_master import PaceMaster, pace_instances
 from pylon_slave import PylonSlave
 from vevor import VevorInverter
-from maestro import Maestro
+from maestro import Maestro, SystemStatus
 from coil import CoilState
 
 from translator import Translator
@@ -13,7 +13,7 @@ import threading
 import ui
 from webui import WebUI
 
-import os, time
+import os, time, argparse
 
 # TODO: Move to config.py
 IP = '192.168.31.190'
@@ -35,6 +35,31 @@ threads = []
 # set timezone to local time
 os.environ['TZ'] = "Europe/Warsaw"
 time.tzset()
+
+parser = argparse.ArgumentParser()
+# Allow to start with a different state than default.
+maestro_args = parser.add_argument_group('Maestro')
+maestro_args.add_argument("--set_force_disable", action="store_true")
+maestro_args.add_argument("--set_force_charging_priority", action="store_true")
+maestro_args.add_argument("--set_rebalance_needed", action="store_true")
+maestro_args.add_argument("--set_rebalance_active", action="store_true")
+maestro_args.add_argument("--set_rebalance_completed", action="store_true")
+maestro_args.add_argument("--set_rebalance_threshold_hit", action="store_true")
+args = parser.parse_args()
+
+# TODO: maybe move to SytemStatus class as loadCmdlineArgs(args)?
+if args.set_force_disable:
+    SystemStatus.force_disable = True
+if args.set_force_charging_priority:
+    SystemStatus.force_charging_priority = True
+if args.set_rebalance_needed:
+    SystemStatus.rebalance_needed = True
+if args.set_rebalance_active:
+    SystemStatus.rebalance_active = True
+if args.set_rebalance_completed:
+    SystemStatus.rebalance_completed = True
+if args.set_rebalance_threshold_hit:
+    SystemStatus.rebalance_threshold_hit = True
 
 Translator.init(bms_count)
 
