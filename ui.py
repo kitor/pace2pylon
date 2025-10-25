@@ -26,6 +26,9 @@ def ts_print(line):
 
 
 def tprint(thread_id, buf):
+    # TODO: This is buggy on start, before all threads are populated it will
+    # not print two last started threads instead of just WebUI
+    # Maybe it is time to switch to proper logging setup?
     if (thread_id > 12) and (thread_id < (len(logs) - 2)):
 	# skip webui and batteries logs
         ts_print(buf)
