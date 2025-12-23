@@ -72,7 +72,7 @@ var maestroUI = {
     },
     updateMonitor: function(){
         buf = `Allow charge ${ drawBool(!systemStatus.disable_charge) }, discharge ${ drawBool(!systemStatus.disable_discharge) }, 
-               Force disable: <a href="/toggle/BatteryDisable">${ systemStatus.force_disable }</a><br />
+               Force disable: <a href="/toggle/BatteryDisable">${ systemStatus.force_disable }</a>, Force balance: <a href="/toggle/ForcedBalancing">${ systemStatus.forced_balancing }</a><br />
                Comm: battery ${ drawBool(!systemStatus.battery_no_comm) }, coil ${ drawBool(!systemStatus.coil_no_comm) } <br />
                BMS protect ${ drawProt(bmsProtectionStatus.prot) }, fault ${ drawProt(bmsProtectionStatus.fault) },
                cell OV ${ drawProt(bmsProtectionStatus.bat_ov_prot) }, cell balancing active: ${systemProtectionStatus.cell_balancing }<br />

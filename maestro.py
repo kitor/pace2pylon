@@ -54,6 +54,8 @@ class SystemStatus:
     disable_discharge = True
     force_disable = False
     force_charging_priority = False
+    forced_balancing = False
+    forced_balacing_status = []
 
     rebalance_needed = False
     rebalance_active = False
@@ -117,6 +119,9 @@ class Maestro:
         self.thread_id = thread_id
         self.reboot_done = False
 
+        for i in range(Translator.count):
+            SystemStatus.forced_balacing_status.append(0)
+
 
     def task(self):
         tprint(self.thread_id, "Maestro: task start")
@@ -144,6 +149,9 @@ class Maestro:
                 # Switch between regular and rebalance modes
                 if SystemStatus.rebalance_needed and not SystemStatus.rebalance_active:
                     self.requestRebalance()
+
+                if SystemStatus.rebalance_active and SystemStatus.forced_balancing:
+                    self.forcedBalancingStep()
 
                 if SystemStatus.rebalance_active and SystemStatus.rebalance_completed:
                     self.disableRebalance()
@@ -321,6 +329,21 @@ class Maestro:
                 pace_instances[i].tryPostMsg(
                     pace_api.WriteChargeMosfetSwitchCommand, self.paceRebootCbr)
 
+    def forcedBalancingStep(self):
+        for i in range(len(Translator.batteries)):
+            if any([
+                Translator.batteries[i][0x44]["protect_state_1"] & 0x05, # Overvolt
+                Translator.batteries[i][0x44]["protect_state_2"] & 0x80  # Fully charged
+            ]) and not any([
+                Translator.batteries[i][0x44]["balance_state_1"],
+                Translator.batteries[i][0x44]["balance_state_2"]
+            ]):
+                if not SystemStatus.forced_balacing_status[i]:
+                    SystemStatus.forced_balacing_status[i] = time()
+                if time() - SystemStatus.forced_balacing_status[i] > 60:
+                    SystemStatus.forced_balacing_status[i] = 0
+                    tprint(self.thread_id, f"Maestro: Balancing battery {i} restart.")
+                    pace_instances[i].tryPostMsg(pace_api.WriteChargeMosfetSwitchCommand, self.paceRebootCbr)
 
     def paceRebootCbr(self, battery_id, cid2, data, failed=False):
         '''
