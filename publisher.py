@@ -52,6 +52,8 @@ def parseBatteries(data):
         out[f"{i}_soc"] = battery['66']['soc']
         out[f"{i}_v"] = f"{(battery['66']['volts'] / 1000):.3f}"
         out[f"{i}_amps"] = f"{(battery['66']['current'] / 100):.2f}"
+        for j, cell in enumerate(battery['66']['cells']):
+            out[f"{i}_cell_{j}_v"] = f"{(cell / 1000):.3f}"
     return out
 
 while True:
