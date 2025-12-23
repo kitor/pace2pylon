@@ -89,7 +89,7 @@ CoilState.instance = CoilState(len(threads), IP, port_coil, coil_slave_id)
 t = threading.Thread(target=CoilState.instance.task)
 threads.append(t)
 
-sleep(5)
+time.sleep(5)
 maestro = Maestro(len(threads))
 t = threading.Thread(target=maestro.task)
 threads.append(t)
